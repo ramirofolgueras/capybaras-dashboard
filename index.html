@@ -463,24 +463,33 @@ function fetchSheet(sheetName) {
     const cbName = 'jsonp_cb_' + (jsonpCounter++);
     const script = document.createElement('script');
     let settled = false;
+    let timeoutId = null;
 
     const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
       delete window[cbName];
       if (script.parentNode) script.parentNode.removeChild(script);
     };
 
     window[cbName] = (data) => {
+      if (settled) return;
       settled = true;
       cleanup();
       resolve(data);
     };
 
     script.onerror = () => {
-      if (!settled) { cleanup(); reject(new Error(`JSONP request failed for ${sheetName}`)); }
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(`JSONP request failed for ${sheetName}`));
     };
 
-    const timeout = setTimeout(() => {
-      if (!settled) { cleanup(); reject(new Error(`JSONP timeout for ${sheetName}`)); }
+    timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(`JSONP timeout for ${sheetName}`));
     }, 10000);
 
     script.src = `${API_URL}?sheet=${encodeURIComponent(sheetName)}&callback=${cbName}`;
@@ -549,7 +558,7 @@ async function loadData() {
   const clientsEmpty = !clientsFromSheet || clientsFromSheet.length === 0;
   const marketsEmpty = !marketsFromSheet || marketsFromSheet.length === 0;
 
-  clients = clientsEmpty ? seedClients.map(x => ({...x, id: uid()})) : clientsFromSheet;
+  clients = clientsEmpty ? seedClients.map(x => ({...x, id: uid()})) : clientsFromSheet.map(normalizeClientRow);
   markets = marketsEmpty ? seedMarket.map(x => ({...x, id: uid()})) : marketsFromSheet.map(normalizeMarketRow);
 
   renderClients();
@@ -565,6 +574,23 @@ function normalizeMarketRow(m) {
   return { ...m, knowledge: parseInt(m.knowledge) || 3 };
 }
 
+function normalizeClientRow(c) {
+  return { ...c, renewal: toPlainDate(c.renewal) };
+}
+
+// Google Sheets returns date cells as full ISO datetimes (e.g. "2026-09-01T03:00:00.000Z").
+// <input type="date"> only accepts plain "yyyy-MM-dd", so strip it down to that.
+function toPlainDate(value) {
+  if (!value) return '';
+  const str = String(value);
+  const match = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) return match[1];
+  // Fallback: try parsing whatever it is and reformatting
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
 function scheduleSave() {
@@ -575,7 +601,8 @@ function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      await pushSheet('Clients', clients);
+      const clientsForSheet = clients.map(c => ({ ...c, renewal: toPlainDate(c.renewal) }));
+      await pushSheet('Clients', clientsForSheet);
       await pushSheet('Markets', markets);
       dot.classList.remove('saving');
       label.textContent = 'Saved';
@@ -798,17 +825,29 @@ function escapeHtml(str) {
 
 loadData();
 
-/* Poll for changes from other editors every 20s, but don't stomp on active typing */
-setInterval(async () => {
+/* Poll for changes from other editors every 20s, but don't stomp on active typing.
+   Stop polling after several consecutive failures instead of hammering a broken endpoint. */
+let pollFailures = 0;
+const MAX_POLL_FAILURES = 3;
+const pollIntervalId = setInterval(async () => {
   if (document.activeElement && document.activeElement.classList.contains('editable')) return;
   try {
     const c = await fetchSheet('Clients');
     const m = await fetchSheet('Markets');
-    if (c && c.length) clients = c;
+    if (c && c.length) clients = c.map(normalizeClientRow);
     if (m && m.length) markets = m.map(normalizeMarketRow);
     renderClients();
     renderMarkets();
-  } catch (e) { console.error('Poll refresh failed:', e); }
+    pollFailures = 0;
+  } catch (e) {
+    pollFailures++;
+    console.error(`Poll refresh failed (${pollFailures}/${MAX_POLL_FAILURES}):`, e);
+    if (pollFailures >= MAX_POLL_FAILURES) {
+      clearInterval(pollIntervalId);
+      console.error('Stopped auto-refresh after repeated failures. Reload the page to retry.');
+      document.getElementById('saveLabel').textContent = 'Auto-refresh paused — reload to retry';
+    }
+  }
 }, 20000);
 
 </script>
