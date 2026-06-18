@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capybaras Agency — Ops Dashboard</title>
+<style>
+  :root {
+    --black: #0E0E0E;
+    --black-deep: #000000;
+    --orange: #FF3300;
+    --orange-light: #E85B03;
+    --white: #FFFFFF;
+    --panel: #181818;
+    --panel-alt: #1F1F1F;
+    --border: #2C2C2C;
+    --text-dim: #9A9A9A;
+    --text-mid: #C7C7C7;
+    --good: #3FB66F;
+    --regular: #E8A93C;
+    --poor: #E04040;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--black-deep);
+    color: var(--white);
+    font-family: 'DM Sans', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 32px 64px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .brand-mark {
+    font-family: 'Bebas Neue', 'Sora', sans-serif;
+    font-size: 26px;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+  }
+
+  .brand-mark span { color: var(--orange); }
+
+  .brand-sub {
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+
+  .header-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  .header-meta strong { color: var(--text-mid); font-weight: 600; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .tab-btn:hover { border-color: var(--orange-light); color: var(--white); }
+
+  .tab-btn.active {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--white);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* SECTION HEAD */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 4px;
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 0;
+  }
+
+  .btn-primary {
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--orange-light); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-ghost:hover { color: var(--white); border-color: var(--text-dim); }
+
+  /* TABLE */
+  .table-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-dim);
+    font-weight: 700;
+    padding: 14px 16px;
+    background: var(--black-deep);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s ease;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--panel-alt); }
+
+  td {
+    padding: 12px 16px;
+    font-size: 14px;
+    vertical-align: top;
+  }
+
+  td.col-brand { font-weight: 700; min-width: 140px; }
+
+  .editable {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--white);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    width: 100%;
+    resize: none;
+  }
+  .editable:hover { border-color: var(--border); }
+  .editable:focus {
+    outline: none;
+    border-color: var(--orange);
+    background: var(--black-deep);
+  }
+  textarea.editable { min-height: 56px; font-size: 13px; line-height: 1.5; }
+
+  select.editable { cursor: pointer; appearance: none; padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239A9A9A'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+  }
+
+  .contract-link {
+    color: var(--orange);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .contract-link:hover { color: var(--orange-light); text-decoration: underline; }
+  .no-contract { color: var(--text-dim); font-size: 13px; font-style: italic; }
+
+  .renewal-cell { white-space: nowrap; }
+  .renewal-date { font-weight: 600; }
+  .renewal-days { display: block; font-size: 11px; margin-top: 2px; }
+  .days-ok { color: var(--text-dim); }
+  .days-soon { color: var(--regular); }
+  .days-urgent { color: var(--poor); font-weight: 700; }
+
+  /* STATUS BADGE SELECT */
+  .status-select {
+    font-weight: 700;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    padding: 7px 28px 7px 12px;
+  }
+  .status-Good { background: rgba(63,182,111,0.12); color: var(--good); border-color: rgba(63,182,111,0.4); }
+  .status-Regular { background: rgba(232,169,60,0.12); color: var(--regular); border-color: rgba(232,169,60,0.4); }
+  .status-Poor { background: rgba(224,64,64,0.12); color: var(--poor); border-color: rgba(224,64,64,0.4); }
+  .status-select option { background: var(--panel); color: var(--white); }
+
+  .knowledge-select {
+    font-weight: 700;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    padding: 7px 28px 7px 12px;
+  }
+  .know-1, .know-2 { background: rgba(224,64,64,0.12); color: var(--poor); border-color: rgba(224,64,64,0.4); }
+  .know-3 { background: rgba(232,169,60,0.12); color: var(--regular); border-color: rgba(232,169,60,0.4); }
+  .know-4, .know-5 { background: rgba(63,182,111,0.12); color: var(--good); border-color: rgba(63,182,111,0.4); }
+
+  .row-actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    line-height: 1;
+  }
+  .icon-btn:hover { color: var(--poor); background: rgba(224,64,64,0.1); }
+
+  /* STAT STRIP */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .stat-num { font-size: 26px; font-weight: 800; font-family: 'Sora', sans-serif; }
+  .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .stat-num.c-good { color: var(--good); }
+  .stat-num.c-regular { color: var(--regular); }
+  .stat-num.c-poor { color: var(--poor); }
+  .stat-num.c-orange { color: var(--orange); }
+
+  .footer-note {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .save-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .save-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--good);
+    transition: background 0.2s ease;
+  }
+  .save-dot.saving { background: var(--regular); }
+
+  @media (max-width: 900px) {
+    .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    .app { padding: 20px 16px 48px; }
+    table { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">CAPYBARAS<span>.</span></div>
+      <div class="brand-sub">Ops Dashboard</div>
+    </div>
+    <div class="header-meta">
+      <div><strong>Internal use</strong> — Capybaras Agency</div>
+      <div id="todayLabel"></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="clients">Clients Status</button>
+    <button class="tab-btn" data-tab="marketplace">Marketplace Performance</button>
+  </div>
+
+  <!-- ===================== CLIENTS PANEL ===================== -->
+  <div class="panel active" id="panel-clients">
+
+    <div class="stat-strip" id="clientStats"></div>
+
+    <div class="section-head">
+      <div>
+        <p class="section-title">Clients Status</p>
+        <p class="section-desc">Active accounts, contract renewals, and health at a glance.</p>
+      </div>
+      <button class="btn-primary" id="addClientBtn">+ Add client</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:14%">Brand</th>
+            <th style="width:12%">Contract</th>
+            <th style="width:13%">Next renewal</th>
+            <th style="width:10%">Status</th>
+            <th>Improvement recommendations</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="clientsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== MARKETPLACE PANEL ===================== -->
+  <div class="panel" id="panel-marketplace">
+
+    <div class="stat-strip" id="marketStats"></div>
+
+    <div class="section-head">
+      <div>
+        <p class="section-title">Marketplace Performance</p>
+        <p class="section-desc">Where Capybaras stands as an agency, channel by channel.</p>
+      </div>
+      <button class="btn-primary" id="addMarketBtn">+ Add marketplace</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:16%">Marketplace</th>
+            <th style="width:12%">Knowledge</th>
+            <th style="width:22%">Active clients</th>
+            <th>Improvement recommendations</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="marketBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span>Synced to Google Sheets — capybaras.agency accounts only.</span>
+    <span class="save-pill"><span class="save-dot" id="saveDot"></span><span id="saveLabel">Saved</span></span>
+  </div>
+
+</div>
+
+<script>
+/* ============ CONSTANTS ============ */
+const TODAY = new Date('2026-06-18T00:00:00');
+const KNOW_MAP = { Low: 2, Medium: 3, High: 4 };
+const KNOW_LABEL = { 1:'1 — None', 2:'2 — Low', 3:'3 — Medium', 4:'4 — High', 5:'5 — Expert' };
+
+document.getElementById('todayLabel').textContent =
+  TODAY.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+/* ============ SEED DATA (from Dashboard_Inputs.csv) ============ */
+const seedClients = [
+  { brand:'Gamboa', contract:'https://drive.google.com/file/d/1WmFxYi4x16Gep-StvFK2KrecuA4wpKSQ/view?usp=drive_link', renewal:'2026-09-01', status:'', notes:'' },
+  { brand:'Norse Tradesman', contract:'https://drive.google.com/file/d/1ZO-pXVpmff1KCQYN-52OvO1R2f0_deaZ/view?usp=sharing', renewal:'2026-09-01', status:'', notes:'' },
+  { brand:'Tucann', contract:'https://drive.google.com/file/d/11cuvDfNjLKoCxa7bottvvbUgwea_EWUE/view?usp=sharing', renewal:'2026-09-01', status:'', notes:'' },
+  { brand:'The Sunny Zebra', contract:'https://drive.google.com/file/d/1Xbej4UQFbM-sgy0lv_zU0nSTplcIPwYT/view?usp=sharing', renewal:'2026-09-01', status:'', notes:'' },
+  { brand:'Arcanix', contract:'https://drive.google.com/file/d/1siP0G3R7dAq11KbkkGNH8TS5xJGl9kKc/view?usp=drive_link', renewal:'2026-09-01', status:'', notes:'' },
+  { brand:'Expovinalia', contract:'https://drive.google.com/file/d/1-y3t0ZNNOwAT3WlO4Sx8Rex4HnXRjJjf/view?usp=sharing', renewal:'2026-08-01', status:'', notes:'' },
+  { brand:'Anrdomaco', contract:'https://drive.google.com/file/d/1H63b6pOtyg_ekMWuSqeZRftw3JTmNxsc/view?usp=sharing', renewal:'2026-12-31', status:'', notes:'' },
+  { brand:'Tattoo Care', contract:'', renewal:'', status:'', notes:'' },
+  { brand:'Un Mate', contract:'https://drive.google.com/file/d/11teAcZ02Bo8EJ8qRWyybMXzjpmUPINQy/view?usp=sharing', renewal:'2026-10-01', status:'', notes:'' },
+  { brand:'Gatherings by CP', contract:'https://drive.google.com/file/d/1gRlQxLqWllGo-MW6cJUtzstCEFHcQcAJ/view?usp=sharing', renewal:'2026-10-01', status:'', notes:'' },
+  { brand:'Global Ross', contract:'https://drive.google.com/file/d/1VUqjhpJedG1LyWOeP6kK4h4pPoloETy1/view?usp=drive_link', renewal:'2027-03-01', status:'', notes:'' },
+  { brand:'Lanzero', contract:'https://drive.google.com/file/d/1k1tDr3f02pMSNkC0cX6ShSF9r5ULkq7H/view?usp=sharing', renewal:'2026-11-01', status:'', notes:'' },
+];
+
+const seedMarket = [
+  { marketplace:'Amazon Full Service', knowledge:KNOW_MAP.High, clients:'20+ active accounts', notes:'' },
+  { marketplace:'Amazon DSP', knowledge:KNOW_MAP.Low, clients:'1 active account', notes:'' },
+  { marketplace:'Mercado Libre', knowledge:KNOW_MAP.High, clients:'3 active accounts', notes:'' },
+  { marketplace:'Walmart', knowledge:KNOW_MAP.Medium, clients:'1 active account', notes:'' },
+  { marketplace:'Shopify', knowledge:KNOW_MAP.High, clients:'1 active account', notes:'' },
+  { marketplace:'Meta Ads', knowledge:KNOW_MAP.Medium, clients:'2 active accounts', notes:'' },
+  { marketplace:'TikTok Shop', knowledge:KNOW_MAP.Medium, clients:'0 active accounts', notes:'' },
+  { marketplace:'Liverpool', knowledge:KNOW_MAP.Medium, clients:'0 active accounts', notes:'' },
+];
+
+let clients = [];
+let markets = [];
+let saveTimer = null;
+
+/* ============ GOOGLE SHEETS BACKEND ============ */
+const API_URL = 'https://script.google.com/a/macros/capybaras.agency/s/AKfycbwo6FhIpJPUYNJDh2PoF2YaIzjkrV4oHQ4OelTXoubN4Pqt42oZhfXSngn6be4h_0IdOA/exec';
+
+async function fetchSheet(sheetName) {
+  const res = await fetch(`${API_URL}?sheet=${sheetName}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${sheetName}`);
+  return res.json();
+}
+
+async function pushSheet(sheetName, rows) {
+  // Sent as text/plain to avoid a CORS preflight Apps Script can't answer.
+  // The script still JSON.parses the body normally.
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ sheet: sheetName, rows: rows }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} pushing ${sheetName}`);
+  return res.json();
+}
+
+async function loadData() {
+  let clientsFromSheet = [];
+  let marketsFromSheet = [];
+
+  try {
+    clientsFromSheet = await fetchSheet('Clients');
+  } catch (e) {
+    console.error('Load Clients failed:', e);
+  }
+  try {
+    marketsFromSheet = await fetchSheet('Markets');
+  } catch (e) {
+    console.error('Load Markets failed:', e);
+  }
+
+  const clientsEmpty = !clientsFromSheet || clientsFromSheet.length === 0;
+  const marketsEmpty = !marketsFromSheet || marketsFromSheet.length === 0;
+
+  clients = clientsEmpty ? seedClients.map(x => ({...x, id: uid()})) : clientsFromSheet;
+  markets = marketsEmpty ? seedMarket.map(x => ({...x, id: uid()})) : marketsFromSheet.map(normalizeMarketRow);
+
+  renderClients();
+  renderMarkets();
+
+  // First-ever run: the Sheet was empty, so push the starting data up immediately.
+  if (clientsEmpty || marketsEmpty) {
+    scheduleSave();
+  }
+}
+
+function normalizeMarketRow(m) {
+  return { ...m, knowledge: parseInt(m.knowledge) || 3 };
+}
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function scheduleSave() {
+  const dot = document.getElementById('saveDot');
+  const label = document.getElementById('saveLabel');
+  dot.classList.add('saving');
+  label.textContent = 'Saving…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await pushSheet('Clients', clients);
+      await pushSheet('Markets', markets);
+      dot.classList.remove('saving');
+      label.textContent = 'Saved';
+    } catch (e) {
+      console.error('Save error:', e, e && e.message);
+      label.textContent = 'Save failed: ' + (e && e.message ? e.message : 'unknown error');
+    }
+  }, 600);
+}
+
+/* ============ TABS ============ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============ DATE HELPERS ============ */
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.round((d - TODAY) / 86400000);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function renewalUrgencyClass(days) {
+  if (days === null) return 'days-ok';
+  if (days <= 30) return 'days-urgent';
+  if (days <= 60) return 'days-soon';
+  return 'days-ok';
+}
+
+/* ============ RENDER CLIENTS ============ */
+function renderClients() {
+  const tbody = document.getElementById('clientsBody');
+  tbody.innerHTML = '';
+
+  clients.forEach((c) => {
+    const tr = document.createElement('tr');
+    const days = daysUntil(c.renewal);
+    const urgencyClass = renewalUrgencyClass(days);
+
+    tr.innerHTML = `
+      <td class="col-brand">
+        <input class="editable" data-field="brand" value="${escapeHtml(c.brand)}" placeholder="Brand name">
+      </td>
+      <td>
+        ${c.contract
+          ? `<a class="contract-link" href="${escapeHtml(c.contract)}" target="_blank" rel="noopener">View ↗</a>
+             <input class="editable" data-field="contract" value="${escapeHtml(c.contract)}" style="font-size:11px;margin-top:4px;" placeholder="Contract URL">`
+          : `<span class="no-contract">No contract on file</span>
+             <input class="editable" data-field="contract" value="" style="font-size:11px;margin-top:4px;" placeholder="Paste contract URL">`
+        }
+      </td>
+      <td class="renewal-cell">
+        <input class="editable" type="date" data-field="renewal" value="${c.renewal || ''}">
+        ${days !== null ? `<span class="renewal-days ${urgencyClass}">${days >= 0 ? days + 'd left' : Math.abs(days) + 'd overdue'}</span>` : ''}
+      </td>
+      <td>
+        <select class="editable status-select status-${c.status || ''}" data-field="status">
+          <option value="" ${!c.status ? 'selected':''}>—</option>
+          <option value="Good" ${c.status==='Good'?'selected':''}>Good</option>
+          <option value="Regular" ${c.status==='Regular'?'selected':''}>Regular</option>
+          <option value="Poor" ${c.status==='Poor'?'selected':''}>Poor</option>
+        </select>
+      </td>
+      <td>
+        <textarea class="editable" data-field="notes" placeholder="– Add recommendation...">${escapeHtml(c.notes)}</textarea>
+      </td>
+      <td class="row-actions">
+        <button class="icon-btn" data-action="delete" title="Remove client">✕</button>
+      </td>
+    `;
+
+    // wire inputs
+    tr.querySelectorAll('[data-field]').forEach(input => {
+      input.addEventListener('change', () => {
+        c[input.dataset.field] = input.value;
+        if (input.dataset.field === 'status') {
+          input.className = `editable status-select status-${input.value}`;
+        }
+        renderClients();
+        renderClientStats();
+        scheduleSave();
+      });
+      // avoid re-render on every keystroke for text fields; only on blur/change
+    });
+
+    tr.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      if (confirm(`Remove ${c.brand || 'this client'} from the dashboard?`)) {
+        clients = clients.filter(x => x.id !== c.id);
+        renderClients();
+        renderClientStats();
+        scheduleSave();
+      }
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  renderClientStats();
+}
+
+function renderClientStats() {
+  const total = clients.length;
+  const good = clients.filter(c => c.status === 'Good').length;
+  const regular = clients.filter(c => c.status === 'Regular').length;
+  const poor = clients.filter(c => c.status === 'Poor').length;
+  const upcoming = clients.filter(c => {
+    const d = daysUntil(c.renewal);
+    return d !== null && d <= 60;
+  }).length;
+
+  document.getElementById('clientStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num c-orange">${total}</div><div class="stat-label">Active clients</div></div>
+    <div class="stat-card"><div class="stat-num c-good">${good}</div><div class="stat-label">Good status</div></div>
+    <div class="stat-card"><div class="stat-num c-poor">${poor}</div><div class="stat-label">Poor status — needs attention</div></div>
+    <div class="stat-card"><div class="stat-num c-regular">${upcoming}</div><div class="stat-label">Renewals within 60 days</div></div>
+  `;
+}
+
+/* ============ RENDER MARKETPLACE ============ */
+function renderMarkets() {
+  const tbody = document.getElementById('marketBody');
+  tbody.innerHTML = '';
+
+  markets.forEach((m) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-brand">
+        <input class="editable" data-field="marketplace" value="${escapeHtml(m.marketplace)}" placeholder="Marketplace name">
+      </td>
+      <td>
+        <select class="editable knowledge-select know-${m.knowledge}" data-field="knowledge">
+          ${[1,2,3,4,5].map(n => `<option value="${n}" ${m.knowledge==n?'selected':''}>${KNOW_LABEL[n]}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input class="editable" data-field="clients" value="${escapeHtml(m.clients)}" placeholder="e.g. 3 active accounts">
+      </td>
+      <td>
+        <textarea class="editable" data-field="notes" placeholder="– Add recommendation...">${escapeHtml(m.notes)}</textarea>
+      </td>
+      <td class="row-actions">
+        <button class="icon-btn" data-action="delete" title="Remove marketplace">✕</button>
+      </td>
+    `;
+
+    tr.querySelectorAll('[data-field]').forEach(input => {
+      input.addEventListener('change', () => {
+        const val = input.dataset.field === 'knowledge' ? parseInt(input.value) : input.value;
+        m[input.dataset.field] = val;
+        if (input.dataset.field === 'knowledge') {
+          input.className = `editable knowledge-select know-${val}`;
+        }
+        renderMarketStats();
+        scheduleSave();
+      });
+    });
+
+    tr.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      if (confirm(`Remove ${m.marketplace || 'this marketplace'} from the dashboard?`)) {
+        markets = markets.filter(x => x.id !== m.id);
+        renderMarkets();
+        renderMarketStats();
+        scheduleSave();
+      }
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  renderMarketStats();
+}
+
+function renderMarketStats() {
+  const total = markets.length;
+  const avgKnow = total ? (markets.reduce((s,m) => s + (m.knowledge||0), 0) / total).toFixed(1) : '0.0';
+  const strong = markets.filter(m => m.knowledge >= 4).length;
+  const weak = markets.filter(m => m.knowledge <= 2).length;
+
+  document.getElementById('marketStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num c-orange">${total}</div><div class="stat-label">Channels tracked</div></div>
+    <div class="stat-card"><div class="stat-num c-good">${strong}</div><div class="stat-label">Strong knowledge (4–5)</div></div>
+    <div class="stat-card"><div class="stat-num c-poor">${weak}</div><div class="stat-label">Weak knowledge (1–2)</div></div>
+    <div class="stat-card"><div class="stat-num c-regular">${avgKnow}</div><div class="stat-label">Average score</div></div>
+  `;
+}
+
+/* ============ ADD ROW ============ */
+document.getElementById('addClientBtn').addEventListener('click', () => {
+  clients.unshift({ id:uid(), brand:'', contract:'', renewal:'', status:'', notes:'' });
+  renderClients();
+  scheduleSave();
+});
+
+document.getElementById('addMarketBtn').addEventListener('click', () => {
+  markets.unshift({ id:uid(), marketplace:'', knowledge:3, clients:'', notes:'' });
+  renderMarkets();
+  scheduleSave();
+});
+
+/* ============ UTIL ============ */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+loadData();
+
+/* Poll for changes from other editors every 20s, but don't stomp on active typing */
+setInterval(async () => {
+  if (document.activeElement && document.activeElement.classList.contains('editable')) return;
+  try {
+    const c = await fetchSheet('Clients');
+    const m = await fetchSheet('Markets');
+    if (c && c.length) clients = c;
+    if (m && m.length) markets = m.map(normalizeMarketRow);
+    renderClients();
+    renderMarkets();
+  } catch (e) { console.error('Poll refresh failed:', e); }
+}, 20000);
+
+</script>
+
+</body>
+</html>
