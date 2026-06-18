@@ -130,6 +130,32 @@
     margin: 0;
   }
 
+  .head-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-select {
+    background: var(--panel);
+    color: var(--text-mid);
+    border: 1px solid var(--border);
+    padding: 9px 28px 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239A9A9A'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .filter-select:hover { border-color: var(--text-dim); }
+  .filter-select:focus { outline: none; border-color: var(--orange); }
+  .filter-select option { background: var(--panel); color: var(--white); }
+
   .btn-primary {
     background: var(--orange);
     color: var(--white);
@@ -359,10 +385,11 @@
     gap: 6px;
     background: var(--panel-alt);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-left: 3px solid var(--orange);
+    border-radius: 8px;
     padding: 4px 8px 4px 10px;
     font-size: 12px;
-    color: var(--text-mid);
+    color: var(--white);
     line-height: 1.3;
   }
   .chip-remove {
@@ -457,7 +484,15 @@
         <p class="section-title">Clients Status</p>
         <p class="section-desc">Active accounts, contract renewals, and health at a glance.</p>
       </div>
-      <button class="btn-primary" id="addClientBtn">+ Add client</button>
+      <div class="head-actions">
+        <select class="filter-select" id="clientStatusFilter">
+          <option value="">All statuses</option>
+          <option value="Good">Good</option>
+          <option value="Regular">Regular</option>
+          <option value="Poor">Poor</option>
+        </select>
+        <button class="btn-primary" id="addClientBtn">+ Add client</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -509,12 +544,28 @@
   <!-- ===================== GROWTH PANEL ===================== -->
   <div class="panel" id="panel-growth">
 
+    <div class="stat-strip" id="growthStats"></div>
+
     <div class="section-head">
       <div>
         <p class="section-title">Growth</p>
         <p class="section-desc">Internal initiatives and projects in motion.</p>
       </div>
-      <button class="btn-primary" id="addGrowthBtn">+ Add project</button>
+      <div class="head-actions">
+        <select class="filter-select" id="growthPriorityFilter">
+          <option value="">All priorities</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+        <select class="filter-select" id="growthStatusFilter">
+          <option value="">All statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+        <button class="btn-primary" id="addGrowthBtn">+ Add project</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -582,6 +633,10 @@ let clients = [];
 let markets = [];
 let growth = [];
 let saveTimer = null;
+
+let clientStatusFilter = '';
+let growthPriorityFilter = '';
+let growthStatusFilter = '';
 
 /* ============ GOOGLE SHEETS BACKEND (CORS-safe: JSONP read, iframe-form write) ============ */
 const API_URL = 'https://script.google.com/a/macros/capybaras.agency/s/AKfycbwo6FhIpJPUYNJDh2PoF2YaIzjkrV4oHQ4OelTXoubN4Pqt42oZhfXSngn6be4h_0IdOA/exec';
@@ -903,7 +958,11 @@ function renderClients() {
   const tbody = document.getElementById('clientsBody');
   tbody.innerHTML = '';
 
-  clients.forEach((c) => {
+  const visibleClients = clientStatusFilter
+    ? clients.filter(c => (c.status || '') === clientStatusFilter)
+    : clients;
+
+  visibleClients.forEach((c) => {
     const tr = document.createElement('tr');
     tr.setAttribute('data-row-id', c.id);
     const days = daysUntil(c.renewal);
@@ -935,7 +994,7 @@ function renderClients() {
       </td>
       <td class="chip-cell" data-chip-cell="notes">
         ${renderChipList(c.notes)}
-        <input class="chip-input" data-chip-input="notes" placeholder="Type and press Enter…">
+        <input class="chip-input" data-chip-input="notes" placeholder="">
       </td>
       <td class="row-actions">
         <button class="icon-btn" data-action="delete" title="Remove client">✕</button>
@@ -1029,7 +1088,7 @@ function renderMarkets() {
       </td>
       <td class="chip-cell" data-chip-cell="notes">
         ${renderChipList(m.notes)}
-        <input class="chip-input" data-chip-input="notes" placeholder="Type and press Enter…">
+        <input class="chip-input" data-chip-input="notes" placeholder="">
       </td>
       <td class="row-actions">
         <button class="icon-btn" data-action="delete" title="Remove marketplace">✕</button>
@@ -1084,7 +1143,13 @@ function renderGrowth() {
   const tbody = document.getElementById('growthBody');
   tbody.innerHTML = '';
 
-  growth.forEach((g) => {
+  const visibleGrowth = growth.filter(g => {
+    if (growthPriorityFilter && (g.priority || 'Medium') !== growthPriorityFilter) return false;
+    if (growthStatusFilter && (g.status || 'Pending') !== growthStatusFilter) return false;
+    return true;
+  });
+
+  visibleGrowth.forEach((g) => {
     const tr = document.createElement('tr');
     tr.setAttribute('data-row-id', g.id);
     const statusClass = (g.status || 'Pending').replace(/\s+/g, '');
@@ -1137,6 +1202,35 @@ function renderGrowth() {
 
     tbody.appendChild(tr);
   });
+
+  renderGrowthStats();
+}
+
+function renderGrowthStats() {
+  const total = growth.length;
+  const pending = growth.filter(g => (g.status || 'Pending') === 'Pending').length;
+  const inProgress = growth.filter(g => g.status === 'In Progress').length;
+  const completed = growth.filter(g => g.status === 'Completed').length;
+  const rated = pending + inProgress + completed;
+  const pct = (n) => rated ? (n / rated * 100) : 0;
+
+  document.getElementById('growthStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num c-orange">${total}</div><div class="stat-label">Total projects</div></div>
+    <div class="status-chart-card">
+      <div class="status-chart-label">Project status</div>
+      <div class="status-bar">
+        <div class="status-bar-seg seg-poor" style="width:${pct(pending)}%" title="Pending: ${pending}"></div>
+        <div class="status-bar-seg seg-regular" style="width:${pct(inProgress)}%" title="In Progress: ${inProgress}"></div>
+        <div class="status-bar-seg seg-good" style="width:${pct(completed)}%" title="Completed: ${completed}"></div>
+      </div>
+      <div class="status-chart-legend">
+        <span class="legend-item"><span class="legend-dot seg-poor"></span>Pending: ${pending}</span>
+        <span class="legend-item"><span class="legend-dot seg-regular"></span>In Progress: ${inProgress}</span>
+        <span class="legend-item"><span class="legend-dot seg-good"></span>Completed: ${completed}</span>
+      </div>
+    </div>
+    <div class="stat-card"><div class="stat-num c-poor">${growth.filter(g => g.priority === 'High' && g.status !== 'Completed').length}</div><div class="stat-label">High priority, open</div></div>
+  `;
 }
 
 /* ============ ADD ROW ============ */
@@ -1156,6 +1250,22 @@ document.getElementById('addGrowthBtn').addEventListener('click', () => {
   growth.unshift({ id:uid(), project:'', description:'', priority:'Medium', status:'Pending' });
   renderGrowth();
   scheduleSave();
+});
+
+/* ============ FILTERS ============ */
+document.getElementById('clientStatusFilter').addEventListener('change', (e) => {
+  clientStatusFilter = e.target.value;
+  renderClients();
+});
+
+document.getElementById('growthPriorityFilter').addEventListener('change', (e) => {
+  growthPriorityFilter = e.target.value;
+  renderGrowth();
+});
+
+document.getElementById('growthStatusFilter').addEventListener('change', (e) => {
+  growthStatusFilter = e.target.value;
+  renderGrowth();
 });
 
 /* ============ UTIL ============ */
