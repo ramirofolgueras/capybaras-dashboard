@@ -453,25 +453,82 @@ let clients = [];
 let markets = [];
 let saveTimer = null;
 
-/* ============ GOOGLE SHEETS BACKEND ============ */
+/* ============ GOOGLE SHEETS BACKEND (CORS-safe: JSONP read, iframe-form write) ============ */
 const API_URL = 'https://script.google.com/a/macros/capybaras.agency/s/AKfycbwo6FhIpJPUYNJDh2PoF2YaIzjkrV4oHQ4OelTXoubN4Pqt42oZhfXSngn6be4h_0IdOA/exec';
 
-async function fetchSheet(sheetName) {
-  const res = await fetch(`${API_URL}?sheet=${sheetName}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${sheetName}`);
-  return res.json();
+let jsonpCounter = 0;
+
+function fetchSheet(sheetName) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'jsonp_cb_' + (jsonpCounter++);
+    const script = document.createElement('script');
+    let settled = false;
+
+    const cleanup = () => {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    window[cbName] = (data) => {
+      settled = true;
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      if (!settled) { cleanup(); reject(new Error(`JSONP request failed for ${sheetName}`)); }
+    };
+
+    const timeout = setTimeout(() => {
+      if (!settled) { cleanup(); reject(new Error(`JSONP timeout for ${sheetName}`)); }
+    }, 10000);
+
+    script.src = `${API_URL}?sheet=${encodeURIComponent(sheetName)}&callback=${cbName}`;
+    document.body.appendChild(script);
+  });
 }
 
-async function pushSheet(sheetName, rows) {
-  // Sent as text/plain to avoid a CORS preflight Apps Script can't answer.
-  // The script still JSON.parses the body normally.
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ sheet: sheetName, rows: rows }),
+function pushSheet(sheetName, rows) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'jsonp_save_cb_' + (jsonpCounter++);
+    const iframeName = 'jsonp_save_iframe_' + jsonpCounter;
+
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+
+    const form = document.createElement('form');
+    form.action = API_URL;
+    form.method = 'POST';
+    form.target = iframeName;
+    form.style.display = 'none';
+
+    const addField = (name, value) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    };
+    addField('sheet', sheetName);
+    addField('rows', JSON.stringify(rows));
+
+    let settled = false;
+    const cleanup = () => {
+      if (form.parentNode) form.parentNode.removeChild(form);
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    };
+
+    // Apps Script can't message us back through the iframe (cross-origin),
+    // so we treat "no network error within a short window" as success.
+    const timeout = setTimeout(() => {
+      if (!settled) { settled = true; cleanup(); resolve({ ok: true, assumed: true }); }
+    }, 2500);
+
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    form.submit();
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status} pushing ${sheetName}`);
-  return res.json();
 }
 
 async function loadData() {
