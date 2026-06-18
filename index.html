@@ -306,6 +306,103 @@
     align-items: center;
   }
 
+  /* STATUS BAR CHART (replaces Good/Poor stat cards) */
+  .status-chart-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    grid-column: span 2;
+  }
+  .status-chart-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .status-bar {
+    display: flex;
+    height: 22px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--black-deep);
+  }
+  .status-bar-seg {
+    transition: width 0.3s ease;
+    min-width: 0;
+  }
+  .status-bar-seg.seg-good { background: var(--good); }
+  .status-bar-seg.seg-regular { background: var(--regular); }
+  .status-bar-seg.seg-poor { background: var(--poor); }
+  .status-chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; color: var(--text-mid); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-dot.seg-good { background: var(--good); }
+  .legend-dot.seg-regular { background: var(--regular); }
+  .legend-dot.seg-poor { background: var(--poor); }
+
+  /* RECOMMENDATION CHIPS */
+  .chip-cell { min-width: 220px; }
+  .chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 4px 8px 4px 10px;
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.3;
+  }
+  .chip-remove {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0 2px;
+    line-height: 1;
+    border-radius: 50%;
+  }
+  .chip-remove:hover { color: var(--poor); }
+  .chip-input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--white);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    width: 100%;
+  }
+  .chip-input::placeholder { color: var(--text-dim); }
+  .chip-input:hover { border-color: var(--border); }
+  .chip-input:focus { outline: none; border-color: var(--orange); background: var(--black-deep); }
+
+  /* GROWTH TAB BADGES */
+  .priority-select { font-weight: 700; font-size: 13px; border: 1px solid var(--border); padding: 7px 28px 7px 12px; }
+  .priority-Low { background: rgba(154,154,154,0.12); color: var(--text-mid); border-color: var(--border); }
+  .priority-Medium { background: rgba(232,169,60,0.12); color: var(--regular); border-color: rgba(232,169,60,0.4); }
+  .priority-High { background: rgba(224,64,64,0.12); color: var(--poor); border-color: rgba(224,64,64,0.4); }
+
+  .gstatus-select { font-weight: 700; font-size: 13px; border: 1px solid var(--border); padding: 7px 28px 7px 12px; }
+  .gstatus-Pending { background: rgba(154,154,154,0.12); color: var(--text-mid); border-color: var(--border); }
+  .gstatus-InProgress { background: rgba(232,169,60,0.12); color: var(--regular); border-color: rgba(232,169,60,0.4); }
+  .gstatus-Completed { background: rgba(63,182,111,0.12); color: var(--good); border-color: rgba(63,182,111,0.4); }
+
+  .clients-active-select { font-weight: 600; font-size: 13px; border: 1px solid var(--border); padding: 7px 28px 7px 12px; width: 100%; }
+
   .save-pill {
     display: inline-flex;
     align-items: center;
@@ -322,12 +419,14 @@
 
   @media (max-width: 900px) {
     .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    .status-chart-card { grid-column: span 2; }
     .app { padding: 20px 16px 48px; }
     table { font-size: 13px; }
   }
 </style>
 </head>
 <body>
+
 
 <div class="app">
 
@@ -345,6 +444,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="clients">Clients Status</button>
     <button class="tab-btn" data-tab="marketplace">Marketplace Performance</button>
+    <button class="tab-btn" data-tab="growth">Growth</button>
   </div>
 
   <!-- ===================== CLIENTS PANEL ===================== -->
@@ -406,6 +506,33 @@
     </div>
   </div>
 
+  <!-- ===================== GROWTH PANEL ===================== -->
+  <div class="panel" id="panel-growth">
+
+    <div class="section-head">
+      <div>
+        <p class="section-title">Growth</p>
+        <p class="section-desc">Internal initiatives and projects in motion.</p>
+      </div>
+      <button class="btn-primary" id="addGrowthBtn">+ Add project</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:18%">Project</th>
+            <th>Description</th>
+            <th style="width:12%">Priority</th>
+            <th style="width:14%">Status</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="growthBody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="footer-note">
     <span>Synced to Google Sheets — capybaras.agency accounts only.</span>
     <span class="save-pill"><span class="save-dot" id="saveDot"></span><span id="saveLabel">Saved</span></span>
@@ -449,8 +576,11 @@ const seedMarket = [
   { marketplace:'Liverpool', knowledge:KNOW_MAP.Medium, clients:'0 active accounts', notes:'' },
 ];
 
+const seedGrowth = [];
+
 let clients = [];
 let markets = [];
+let growth = [];
 let saveTimer = null;
 
 /* ============ GOOGLE SHEETS BACKEND (CORS-safe: JSONP read, iframe-form write) ============ */
@@ -543,6 +673,7 @@ function pushSheet(sheetName, rows) {
 async function loadData() {
   let clientsFromSheet = [];
   let marketsFromSheet = [];
+  let growthFromSheet = [];
 
   try {
     clientsFromSheet = await fetchSheet('Clients');
@@ -554,28 +685,89 @@ async function loadData() {
   } catch (e) {
     console.error('Load Markets failed:', e);
   }
+  try {
+    growthFromSheet = await fetchSheet('Growth');
+  } catch (e) {
+    console.error('Load Growth failed:', e);
+  }
 
   const clientsEmpty = !clientsFromSheet || clientsFromSheet.length === 0;
   const marketsEmpty = !marketsFromSheet || marketsFromSheet.length === 0;
+  const growthEmpty = !growthFromSheet || growthFromSheet.length === 0;
 
   clients = clientsEmpty ? seedClients.map(x => ({...x, id: uid()})) : clientsFromSheet.map(normalizeClientRow);
   markets = marketsEmpty ? seedMarket.map(x => ({...x, id: uid()})) : marketsFromSheet.map(normalizeMarketRow);
+  growth = growthEmpty ? seedGrowth.map(x => ({...x, id: uid()})) : growthFromSheet.map(normalizeGrowthRow);
 
   renderClients();
   renderMarkets();
+  renderGrowth();
 
   // First-ever run: the Sheet was empty, so push the starting data up immediately.
-  if (clientsEmpty || marketsEmpty) {
+  if (clientsEmpty || marketsEmpty || (growthEmpty && seedGrowth.length > 0)) {
     scheduleSave();
   }
 }
 
 function normalizeMarketRow(m) {
-  return { ...m, knowledge: parseInt(m.knowledge) || 3 };
+  return {
+    ...m,
+    knowledge: parseInt(m.knowledge) || 3,
+    notes: notesToArray(m.notes),
+    clients: normalizeActiveClients(m.clients),
+  };
 }
 
 function normalizeClientRow(c) {
-  return { ...c, renewal: toPlainDate(c.renewal) };
+  return { ...c, renewal: toPlainDate(c.renewal), notes: notesToArray(c.notes) };
+}
+
+// notes may arrive as: an array already, a pipe-delimited string from the Sheet,
+// a legacy free-text string, or empty. Normalize to an array of chip strings.
+function notesToArray(notes) {
+  if (Array.isArray(notes)) return notes.filter(Boolean);
+  if (!notes) return [];
+  const str = String(notes);
+  if (str.includes('|')) return str.split('|').map(s => s.trim()).filter(Boolean);
+  return [str.trim()].filter(Boolean);
+}
+
+// Migrate old free-text "Active clients" values (e.g. "20+ active accounts")
+// into the new dropdown's value set: "0".."20" or "20+".
+function normalizeActiveClients(value) {
+  if (value === undefined || value === null || value === '') return '0';
+  const str = String(value).trim();
+  if (/^\d+$/.test(str)) {
+    const n = parseInt(str);
+    return n >= 20 ? '20+' : String(n);
+  }
+  if (str === '20+') return '20+';
+  const match = str.match(/(\d+)\s*\+/);
+  if (match) return '20+';
+  const numMatch = str.match(/(\d+)/);
+  if (numMatch) {
+    const n = parseInt(numMatch[1]);
+    return n >= 20 ? '20+' : String(n);
+  }
+  return '0';
+}
+
+function activeClientsOptions(selected) {
+  const sel = normalizeActiveClients(selected);
+  let opts = '';
+  for (let i = 0; i <= 20; i++) {
+    opts += `<option value="${i}" ${sel === String(i) ? 'selected' : ''}>${i}</option>`;
+  }
+  opts += `<option value="20+" ${sel === '20+' ? 'selected' : ''}>20+</option>`;
+  return opts;
+}
+
+function normalizeGrowthRow(g) {
+  return {
+    ...g,
+    priority: ['Low','Medium','High'].includes(g.priority) ? g.priority : 'Medium',
+    status: ['Pending','In Progress','Completed'].includes(g.status) ? g.status : 'Pending',
+  };
 }
 
 // Google Sheets returns date cells as full ISO datetimes (e.g. "2026-09-01T03:00:00.000Z").
@@ -601,9 +793,18 @@ function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      const clientsForSheet = clients.map(c => ({ ...c, renewal: toPlainDate(c.renewal) }));
+      const clientsForSheet = clients.map(c => ({
+        ...c,
+        renewal: toPlainDate(c.renewal),
+        notes: arrayToNotes(c.notes),
+      }));
+      const marketsForSheet = markets.map(m => ({
+        ...m,
+        notes: arrayToNotes(m.notes),
+      }));
       await pushSheet('Clients', clientsForSheet);
-      await pushSheet('Markets', markets);
+      await pushSheet('Markets', marketsForSheet);
+      await pushSheet('Growth', growth);
       dot.classList.remove('saving');
       label.textContent = 'Saved';
     } catch (e) {
@@ -611,6 +812,11 @@ function scheduleSave() {
       label.textContent = 'Save failed: ' + (e && e.message ? e.message : 'unknown error');
     }
   }, 600);
+}
+
+function arrayToNotes(notes) {
+  const arr = Array.isArray(notes) ? notes : notesToArray(notes);
+  return arr.join(' | ');
 }
 
 /* ============ TABS ============ */
@@ -644,12 +850,62 @@ function renewalUrgencyClass(days) {
 }
 
 /* ============ RENDER CLIENTS ============ */
+/* ============ SHARED CHIP HELPERS (recommendation tags) ============ */
+function renderChipList(notesArr) {
+  const arr = Array.isArray(notesArr) ? notesArr : [];
+  if (arr.length === 0) return '<div class="chip-list"></div>';
+  return `<div class="chip-list">${arr.map((n, i) => `
+    <span class="chip" data-chip-index="${i}">
+      ${escapeHtml(n)}
+      <button class="chip-remove" data-chip-remove="${i}" title="Remove">✕</button>
+    </span>
+  `).join('')}</div>`;
+}
+
+function wireChipCell(rowEl, dataObj, field, onChange) {
+  const cell = rowEl.querySelector(`[data-chip-cell="${field}"]`);
+  if (!cell) return;
+
+  if (!Array.isArray(dataObj[field])) {
+    dataObj[field] = dataObj[field] ? [String(dataObj[field])] : [];
+  }
+
+  cell.querySelectorAll('[data-chip-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.chipRemove);
+      dataObj[field].splice(idx, 1);
+      onChange();
+    });
+  });
+
+  const input = cell.querySelector(`[data-chip-input="${field}"]`);
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (val) {
+          dataObj[field].push(val);
+          input.value = '';
+          onChange();
+          // refocus the new input after re-render so typing can continue
+          requestAnimationFrame(() => {
+            const newCell = document.querySelector(`[data-row-id="${dataObj.id}"] [data-chip-input="${field}"]`);
+            if (newCell) newCell.focus();
+          });
+        }
+      }
+    });
+  }
+}
+
 function renderClients() {
   const tbody = document.getElementById('clientsBody');
   tbody.innerHTML = '';
 
   clients.forEach((c) => {
     const tr = document.createElement('tr');
+    tr.setAttribute('data-row-id', c.id);
     const days = daysUntil(c.renewal);
     const urgencyClass = renewalUrgencyClass(days);
 
@@ -677,8 +933,9 @@ function renderClients() {
           <option value="Poor" ${c.status==='Poor'?'selected':''}>Poor</option>
         </select>
       </td>
-      <td>
-        <textarea class="editable" data-field="notes" placeholder="– Add recommendation...">${escapeHtml(c.notes)}</textarea>
+      <td class="chip-cell" data-chip-cell="notes">
+        ${renderChipList(c.notes)}
+        <input class="chip-input" data-chip-input="notes" placeholder="Type and press Enter…">
       </td>
       <td class="row-actions">
         <button class="icon-btn" data-action="delete" title="Remove client">✕</button>
@@ -698,6 +955,8 @@ function renderClients() {
       });
       // avoid re-render on every keystroke for text fields; only on blur/change
     });
+
+    wireChipCell(tr, c, 'notes', () => { renderClients(); scheduleSave(); });
 
     tr.querySelector('[data-action="delete"]').addEventListener('click', () => {
       if (confirm(`Remove ${c.brand || 'this client'} from the dashboard?`)) {
@@ -719,15 +978,29 @@ function renderClientStats() {
   const good = clients.filter(c => c.status === 'Good').length;
   const regular = clients.filter(c => c.status === 'Regular').length;
   const poor = clients.filter(c => c.status === 'Poor').length;
+  const rated = good + regular + poor; // excludes unset status
   const upcoming = clients.filter(c => {
     const d = daysUntil(c.renewal);
     return d !== null && d <= 60;
   }).length;
 
+  const pct = (n) => rated ? (n / rated * 100) : 0;
+
   document.getElementById('clientStats').innerHTML = `
     <div class="stat-card"><div class="stat-num c-orange">${total}</div><div class="stat-label">Active clients</div></div>
-    <div class="stat-card"><div class="stat-num c-good">${good}</div><div class="stat-label">Good status</div></div>
-    <div class="stat-card"><div class="stat-num c-poor">${poor}</div><div class="stat-label">Poor status — needs attention</div></div>
+    <div class="status-chart-card">
+      <div class="status-chart-label">Account health</div>
+      <div class="status-bar">
+        <div class="status-bar-seg seg-good" style="width:${pct(good)}%" title="Good: ${good}"></div>
+        <div class="status-bar-seg seg-regular" style="width:${pct(regular)}%" title="Regular: ${regular}"></div>
+        <div class="status-bar-seg seg-poor" style="width:${pct(poor)}%" title="Poor: ${poor}"></div>
+      </div>
+      <div class="status-chart-legend">
+        <span class="legend-item"><span class="legend-dot seg-good"></span>Good: ${good}</span>
+        <span class="legend-item"><span class="legend-dot seg-regular"></span>Regular: ${regular}</span>
+        <span class="legend-item"><span class="legend-dot seg-poor"></span>Poor: ${poor}</span>
+      </div>
+    </div>
     <div class="stat-card"><div class="stat-num c-regular">${upcoming}</div><div class="stat-label">Renewals within 60 days</div></div>
   `;
 }
@@ -739,6 +1012,7 @@ function renderMarkets() {
 
   markets.forEach((m) => {
     const tr = document.createElement('tr');
+    tr.setAttribute('data-row-id', m.id);
     tr.innerHTML = `
       <td class="col-brand">
         <input class="editable" data-field="marketplace" value="${escapeHtml(m.marketplace)}" placeholder="Marketplace name">
@@ -749,10 +1023,13 @@ function renderMarkets() {
         </select>
       </td>
       <td>
-        <input class="editable" data-field="clients" value="${escapeHtml(m.clients)}" placeholder="e.g. 3 active accounts">
+        <select class="editable clients-active-select" data-field="clients">
+          ${activeClientsOptions(m.clients)}
+        </select>
       </td>
-      <td>
-        <textarea class="editable" data-field="notes" placeholder="– Add recommendation...">${escapeHtml(m.notes)}</textarea>
+      <td class="chip-cell" data-chip-cell="notes">
+        ${renderChipList(m.notes)}
+        <input class="chip-input" data-chip-input="notes" placeholder="Type and press Enter…">
       </td>
       <td class="row-actions">
         <button class="icon-btn" data-action="delete" title="Remove marketplace">✕</button>
@@ -770,6 +1047,8 @@ function renderMarkets() {
         scheduleSave();
       });
     });
+
+    wireChipCell(tr, m, 'notes', () => { renderMarkets(); scheduleSave(); });
 
     tr.querySelector('[data-action="delete"]').addEventListener('click', () => {
       if (confirm(`Remove ${m.marketplace || 'this marketplace'} from the dashboard?`)) {
@@ -800,16 +1079,82 @@ function renderMarketStats() {
   `;
 }
 
+/* ============ RENDER GROWTH ============ */
+function renderGrowth() {
+  const tbody = document.getElementById('growthBody');
+  tbody.innerHTML = '';
+
+  growth.forEach((g) => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-row-id', g.id);
+    const statusClass = (g.status || 'Pending').replace(/\s+/g, '');
+    tr.innerHTML = `
+      <td class="col-brand">
+        <input class="editable" data-field="project" value="${escapeHtml(g.project)}" placeholder="Project name">
+      </td>
+      <td>
+        <textarea class="editable" data-field="description" placeholder="Brief description...">${escapeHtml(g.description)}</textarea>
+      </td>
+      <td>
+        <select class="editable priority-select priority-${g.priority || 'Medium'}" data-field="priority">
+          <option value="Low" ${g.priority==='Low'?'selected':''}>Low</option>
+          <option value="Medium" ${(!g.priority || g.priority==='Medium')?'selected':''}>Medium</option>
+          <option value="High" ${g.priority==='High'?'selected':''}>High</option>
+        </select>
+      </td>
+      <td>
+        <select class="editable gstatus-select gstatus-${statusClass}" data-field="status">
+          <option value="Pending" ${(!g.status || g.status==='Pending')?'selected':''}>Pending</option>
+          <option value="In Progress" ${g.status==='In Progress'?'selected':''}>In Progress</option>
+          <option value="Completed" ${g.status==='Completed'?'selected':''}>Completed</option>
+        </select>
+      </td>
+      <td class="row-actions">
+        <button class="icon-btn" data-action="delete" title="Remove project">✕</button>
+      </td>
+    `;
+
+    tr.querySelectorAll('[data-field]').forEach(input => {
+      input.addEventListener('change', () => {
+        g[input.dataset.field] = input.value;
+        if (input.dataset.field === 'priority') {
+          input.className = `editable priority-select priority-${input.value}`;
+        }
+        if (input.dataset.field === 'status') {
+          input.className = `editable gstatus-select gstatus-${input.value.replace(/\s+/g, '')}`;
+        }
+        scheduleSave();
+      });
+    });
+
+    tr.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      if (confirm(`Remove ${g.project || 'this project'} from Growth?`)) {
+        growth = growth.filter(x => x.id !== g.id);
+        renderGrowth();
+        scheduleSave();
+      }
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
 /* ============ ADD ROW ============ */
 document.getElementById('addClientBtn').addEventListener('click', () => {
-  clients.unshift({ id:uid(), brand:'', contract:'', renewal:'', status:'', notes:'' });
+  clients.unshift({ id:uid(), brand:'', contract:'', renewal:'', status:'', notes:[] });
   renderClients();
   scheduleSave();
 });
 
 document.getElementById('addMarketBtn').addEventListener('click', () => {
-  markets.unshift({ id:uid(), marketplace:'', knowledge:3, clients:'', notes:'' });
+  markets.unshift({ id:uid(), marketplace:'', knowledge:3, clients:'0', notes:[] });
   renderMarkets();
+  scheduleSave();
+});
+
+document.getElementById('addGrowthBtn').addEventListener('click', () => {
+  growth.unshift({ id:uid(), project:'', description:'', priority:'Medium', status:'Pending' });
+  renderGrowth();
   scheduleSave();
 });
 
@@ -830,14 +1175,19 @@ loadData();
 let pollFailures = 0;
 const MAX_POLL_FAILURES = 3;
 const pollIntervalId = setInterval(async () => {
-  if (document.activeElement && document.activeElement.classList.contains('editable')) return;
+  const activeEl = document.activeElement;
+  const isTyping = activeEl && (activeEl.classList.contains('editable') || activeEl.classList.contains('chip-input'));
+  if (isTyping) return;
   try {
     const c = await fetchSheet('Clients');
     const m = await fetchSheet('Markets');
+    const g = await fetchSheet('Growth');
     if (c && c.length) clients = c.map(normalizeClientRow);
     if (m && m.length) markets = m.map(normalizeMarketRow);
+    if (g && g.length) growth = g.map(normalizeGrowthRow);
     renderClients();
     renderMarkets();
+    renderGrowth();
     pollFailures = 0;
   } catch (e) {
     pollFailures++;
