@@ -19,6 +19,7 @@
     --good: #3FB66F;
     --regular: #E8A93C;
     --poor: #E04040;
+    --quality-blue: #3B82C4;
     --radius: 10px;
   }
 
@@ -323,6 +324,14 @@
   .stat-num.c-poor { color: var(--poor); }
   .stat-num.c-orange { color: var(--orange); }
 
+  .clickable-stat {
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .clickable-stat:hover { border-color: var(--orange); }
+  .clickable-stat:active { transform: scale(0.98); }
+  .clickable-stat.stat-active { border-color: var(--orange); background: rgba(255,51,0,0.06); }
+
   .footer-note {
     margin-top: 18px;
     font-size: 12px;
@@ -442,9 +451,9 @@
   .pie-legend { flex-direction: column; gap: 8px; margin-top: 0; }
 
   .quality-select { font-weight: 700; font-size: 13px; border: 1px solid var(--border); padding: 7px 28px 7px 12px; }
-  .quality-Poor { background: rgba(224,64,64,0.12); color: var(--poor); border-color: rgba(224,64,64,0.4); }
+  .quality-Poor { background: rgba(59,130,196,0.14); color: var(--quality-blue); border-color: rgba(59,130,196,0.45); }
   .quality-Regular { background: rgba(232,169,60,0.12); color: var(--regular); border-color: rgba(232,169,60,0.4); }
-  .quality-RedHot { background: rgba(255,51,0,0.16); color: var(--orange); border-color: rgba(255,51,0,0.5); }
+  .quality-RedHot { background: rgba(224,64,64,0.14); color: var(--poor); border-color: rgba(224,64,64,0.45); }
 
   .lead-status-select { font-weight: 600; font-size: 12px; border: 1px solid var(--border); padding: 7px 26px 7px 10px; width: 100%; background-color: var(--panel-alt); color: var(--text-mid); }
 
@@ -673,8 +682,8 @@
           <div class="status-chart-legend pie-legend" id="qualityLegend"></div>
         </div>
       </div>
-      <div class="stat-card"><div class="stat-num c-regular" id="leadsDueSoonNum">0</div><div class="stat-label">Due within 7 days</div></div>
-      <div class="stat-card"><div class="stat-num c-good" id="leadsQuoteSentNum">0</div><div class="stat-label">Quote sent</div></div>
+      <div class="stat-card clickable-stat" id="dueSoonCard"><div class="stat-num c-regular" id="leadsDueSoonNum">0</div><div class="stat-label">Due within 7 days</div></div>
+      <div class="stat-card clickable-stat" id="quoteSentCard"><div class="stat-num c-good" id="leadsQuoteSentNum">0</div><div class="stat-label">Quote sent</div></div>
     </div>
 
     <div class="section-head">
@@ -683,6 +692,12 @@
         <p class="section-desc">New business pipeline, from first meeting to close.</p>
       </div>
       <div class="head-actions">
+        <select class="filter-select" id="leadLifecycleFilter">
+          <option value="">All leads</option>
+          <option value="Active">Active</option>
+          <option value="Won">Won</option>
+          <option value="Lost">Lost</option>
+        </select>
         <select class="filter-select" id="leadQualityFilter">
           <option value="">All quality</option>
           <option value="Poor">Poor</option>
@@ -801,6 +816,8 @@ let growthPriorityFilter = '';
 let growthStatusFilter = '';
 let leadQualityFilter = '';
 let leadStatusFilter = '';
+let leadLifecycleFilter = '';
+let leadDueSoonFilter = false;
 let leadSortBy = '';
 
 /* ============ GOOGLE SHEETS BACKEND (CORS-safe: JSONP read, iframe-form write) ============ */
@@ -1436,6 +1453,13 @@ function renderLeads() {
   let visibleLeads = leads.filter(l => {
     if (leadQualityFilter && (l.quality || 'Regular') !== leadQualityFilter) return false;
     if (leadStatusFilter && (l.status || '') !== leadStatusFilter) return false;
+    if (leadLifecycleFilter === 'Won' && l.status !== 'Won') return false;
+    if (leadLifecycleFilter === 'Lost' && l.status !== 'Lost') return false;
+    if (leadLifecycleFilter === 'Active' && (l.status === 'Won' || l.status === 'Lost')) return false;
+    if (leadDueSoonFilter) {
+      const d = daysUntil(l.dueDate);
+      if (d === null || d < 0 || d > 7) return false;
+    }
     return true;
   });
 
@@ -1541,51 +1565,43 @@ function renderLeadsStats() {
   document.getElementById('leadsQuoteSentNum').textContent = quoteSent;
 
   document.getElementById('qualityPieWrap').innerHTML = renderPieChart([
-    { label: 'Poor', value: poor, color: 'var(--poor)' },
+    { label: 'Poor', value: poor, color: 'var(--quality-blue)' },
     { label: 'Regular', value: regular, color: 'var(--regular)' },
-    { label: 'Red Hot', value: redHot, color: 'var(--orange)' },
+    { label: 'Red Hot', value: redHot, color: 'var(--poor)' },
   ]);
 
   document.getElementById('qualityLegend').innerHTML = `
-    <span class="legend-item"><span class="legend-dot" style="background:var(--poor)"></span>Poor: ${poor}</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--quality-blue)"></span>Poor: ${poor}</span>
     <span class="legend-item"><span class="legend-dot" style="background:var(--regular)"></span>Regular: ${regular}</span>
-    <span class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>Red Hot: ${redHot}</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--poor)"></span>Red Hot: ${redHot}</span>
   `;
 }
 
 // Minimal dependency-free SVG pie chart
+// Donut chart via stacked circles + stroke-dasharray (more reliable than hand-rolled arc paths)
 function renderPieChart(segments) {
   const total = segments.reduce((s, seg) => s + seg.value, 0);
-  const size = 100, r = 46, cx = 50, cy = 50;
+  const size = 100, r = 40, cx = 50, cy = 50;
+  const circumference = 2 * Math.PI * r;
 
   if (total === 0) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="10"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="14"/>
     </svg>`;
   }
 
-  let startAngle = -90;
-  const paths = segments.filter(s => s.value > 0).map(seg => {
-    const angle = (seg.value / total) * 360;
-    const endAngle = startAngle + angle;
-    const path = describeArc(cx, cy, r, startAngle, endAngle);
-    startAngle = endAngle;
-    return `<path d="${path}" fill="none" stroke="${seg.color}" stroke-width="14"/>`;
+  let offsetAccum = 0;
+  const circles = segments.filter(s => s.value > 0).map(seg => {
+    const fraction = seg.value / total;
+    const dash = fraction * circumference;
+    const gap = circumference - dash;
+    const dashOffset = -offsetAccum * circumference;
+    offsetAccum += fraction;
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="14"
+      stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${cx} ${cy})"/>`;
   }).join('');
 
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`;
-}
-
-function describeArc(cx, cy, r, startAngle, endAngle) {
-  const start = polarToCartesian(cx, cy, r, endAngle);
-  const end = polarToCartesian(cx, cy, r, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
-}
-
-function polarToCartesian(cx, cy, r, angleDeg) {
-  const angleRad = (angleDeg - 90) * Math.PI / 180;
-  return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) };
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${circles}</svg>`;
 }
 
 /* ============ NOTES MODAL ============ */
@@ -1657,13 +1673,24 @@ document.getElementById('growthStatusFilter').addEventListener('change', (e) => 
   renderGrowth();
 });
 
+document.getElementById('leadLifecycleFilter').addEventListener('change', (e) => {
+  leadLifecycleFilter = e.target.value;
+  leadDueSoonFilter = false;
+  updateClickableStatVisuals();
+  renderLeads();
+});
+
 document.getElementById('leadQualityFilter').addEventListener('change', (e) => {
   leadQualityFilter = e.target.value;
+  leadDueSoonFilter = false;
+  updateClickableStatVisuals();
   renderLeads();
 });
 
 document.getElementById('leadStatusFilter').addEventListener('change', (e) => {
   leadStatusFilter = e.target.value;
+  leadDueSoonFilter = false;
+  updateClickableStatVisuals();
   renderLeads();
 });
 
@@ -1671,6 +1698,34 @@ document.getElementById('leadSortBy').addEventListener('change', (e) => {
   leadSortBy = e.target.value;
   renderLeads();
 });
+
+/* Clickable stat cards: quick-filter shortcuts */
+document.getElementById('dueSoonCard').addEventListener('click', () => {
+  leadDueSoonFilter = !leadDueSoonFilter;
+  // due-soon is independent of status/quality/lifecycle, so clear those for a clean view
+  leadStatusFilter = '';
+  leadLifecycleFilter = '';
+  document.getElementById('leadStatusFilter').value = '';
+  document.getElementById('leadLifecycleFilter').value = '';
+  updateClickableStatVisuals();
+  renderLeads();
+});
+
+document.getElementById('quoteSentCard').addEventListener('click', () => {
+  const isActive = leadStatusFilter === 'Quote Sent';
+  leadStatusFilter = isActive ? '' : 'Quote Sent';
+  leadDueSoonFilter = false;
+  leadLifecycleFilter = '';
+  document.getElementById('leadStatusFilter').value = leadStatusFilter;
+  document.getElementById('leadLifecycleFilter').value = '';
+  updateClickableStatVisuals();
+  renderLeads();
+});
+
+function updateClickableStatVisuals() {
+  document.getElementById('dueSoonCard').classList.toggle('stat-active', leadDueSoonFilter);
+  document.getElementById('quoteSentCard').classList.toggle('stat-active', leadStatusFilter === 'Quote Sent');
+}
 
 /* ============ UTIL ============ */
 function escapeHtml(str) {
