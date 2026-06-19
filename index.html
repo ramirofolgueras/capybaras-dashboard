@@ -430,6 +430,82 @@
 
   .clients-active-select { font-weight: 600; font-size: 13px; border: 1px solid var(--border); padding: 7px 28px 7px 12px; width: 100%; }
 
+  /* LEADS TAB */
+  .leads-stat-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .pie-card { grid-column: unset; }
+  .pie-row { display: flex; align-items: center; gap: 16px; }
+  .pie-legend { flex-direction: column; gap: 8px; margin-top: 0; }
+
+  .quality-select { font-weight: 700; font-size: 13px; border: 1px solid var(--border); padding: 7px 28px 7px 12px; }
+  .quality-Poor { background: rgba(224,64,64,0.12); color: var(--poor); border-color: rgba(224,64,64,0.4); }
+  .quality-Regular { background: rgba(232,169,60,0.12); color: var(--regular); border-color: rgba(232,169,60,0.4); }
+  .quality-RedHot { background: rgba(255,51,0,0.16); color: var(--orange); border-color: rgba(255,51,0,0.5); }
+
+  .lead-status-select { font-weight: 600; font-size: 12px; border: 1px solid var(--border); padding: 7px 26px 7px 10px; width: 100%; background-color: var(--panel-alt); color: var(--text-mid); }
+
+  .notes-btn {
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .notes-btn:hover { border-color: var(--orange); color: var(--white); }
+  .notes-btn.has-notes { border-left: 3px solid var(--orange); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 520px;
+    padding: 20px;
+  }
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .modal-textarea {
+    width: 100%;
+    min-height: 220px;
+    background: var(--black-deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--white);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 12px;
+    resize: vertical;
+  }
+  .modal-textarea:focus { outline: none; border-color: var(--orange); }
+  .modal-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+
   .save-pill {
     display: inline-flex;
     align-items: center;
@@ -447,6 +523,7 @@
   @media (max-width: 900px) {
     .stat-strip { grid-template-columns: repeat(2, 1fr); }
     .status-chart-card { grid-column: span 2; }
+    .leads-stat-row { grid-template-columns: 1fr; }
     .app { padding: 20px 16px 48px; }
     table { font-size: 13px; }
   }
@@ -472,6 +549,7 @@
     <button class="tab-btn active" data-tab="clients">Clients Status</button>
     <button class="tab-btn" data-tab="marketplace">Marketplace Performance</button>
     <button class="tab-btn" data-tab="growth">Growth</button>
+    <button class="tab-btn" data-tab="leads">Leads Tracking</button>
   </div>
 
   <!-- ===================== CLIENTS PANEL ===================== -->
@@ -584,6 +662,88 @@
     </div>
   </div>
 
+  <!-- ===================== LEADS PANEL ===================== -->
+  <div class="panel" id="panel-leads">
+
+    <div class="leads-stat-row">
+      <div class="status-chart-card pie-card">
+        <div class="status-chart-label">Lead quality</div>
+        <div class="pie-row">
+          <div id="qualityPieWrap"></div>
+          <div class="status-chart-legend pie-legend" id="qualityLegend"></div>
+        </div>
+      </div>
+      <div class="stat-card"><div class="stat-num c-regular" id="leadsDueSoonNum">0</div><div class="stat-label">Due within 7 days</div></div>
+      <div class="stat-card"><div class="stat-num c-good" id="leadsQuoteSentNum">0</div><div class="stat-label">Quote sent</div></div>
+    </div>
+
+    <div class="section-head">
+      <div>
+        <p class="section-title">Leads Tracking</p>
+        <p class="section-desc">New business pipeline, from first meeting to close.</p>
+      </div>
+      <div class="head-actions">
+        <select class="filter-select" id="leadQualityFilter">
+          <option value="">All quality</option>
+          <option value="Poor">Poor</option>
+          <option value="Regular">Regular</option>
+          <option value="Red Hot">Red Hot</option>
+        </select>
+        <select class="filter-select" id="leadStatusFilter">
+          <option value="">All statuses</option>
+          <option value="Intro Meeting Scheduled">Intro Meeting Scheduled</option>
+          <option value="Create Presentation">Create Presentation</option>
+          <option value="Presentation Done">Presentation Done</option>
+          <option value="Presentation Meeting Scheduled">Presentation Meeting Scheduled</option>
+          <option value="Quote Sent">Quote Sent</option>
+          <option value="Follow Up">Follow Up</option>
+          <option value="Won">Won</option>
+          <option value="Lost">Lost</option>
+        </select>
+        <select class="filter-select" id="leadSortBy">
+          <option value="">Sort: default</option>
+          <option value="dueDate">Sort: due date</option>
+          <option value="quality">Sort: quality</option>
+          <option value="brand">Sort: brand A–Z</option>
+        </select>
+        <button class="btn-primary" id="addLeadBtn">+ Add lead</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:13%">Brand</th>
+            <th style="width:12%">Contact</th>
+            <th style="width:14%">Email</th>
+            <th style="width:10%">Quality</th>
+            <th style="width:14%">Status</th>
+            <th style="width:14%">Next step</th>
+            <th style="width:11%">Due date</th>
+            <th style="width:8%">Notes</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="leadsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Notes modal -->
+  <div class="modal-overlay" id="notesModalOverlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <span id="notesModalTitle">Notes</span>
+        <button class="icon-btn" id="notesModalClose">✕</button>
+      </div>
+      <textarea class="modal-textarea" id="notesModalTextarea" placeholder="Notes for this lead…"></textarea>
+      <div class="modal-actions">
+        <button class="btn-primary" id="notesModalSave">Save</button>
+      </div>
+    </div>
+  </div>
+
   <div class="footer-note">
     <span>Synced to Google Sheets — capybaras.agency accounts only.</span>
     <span class="save-pill"><span class="save-dot" id="saveDot"></span><span id="saveLabel">Saved</span></span>
@@ -628,15 +788,20 @@ const seedMarket = [
 ];
 
 const seedGrowth = [];
+const seedLeads = [];
 
 let clients = [];
 let markets = [];
 let growth = [];
+let leads = [];
 let saveTimer = null;
 
 let clientStatusFilter = '';
 let growthPriorityFilter = '';
 let growthStatusFilter = '';
+let leadQualityFilter = '';
+let leadStatusFilter = '';
+let leadSortBy = '';
 
 /* ============ GOOGLE SHEETS BACKEND (CORS-safe: JSONP read, iframe-form write) ============ */
 const API_URL = 'https://script.google.com/a/macros/capybaras.agency/s/AKfycbwo6FhIpJPUYNJDh2PoF2YaIzjkrV4oHQ4OelTXoubN4Pqt42oZhfXSngn6be4h_0IdOA/exec';
@@ -729,6 +894,7 @@ async function loadData() {
   let clientsFromSheet = [];
   let marketsFromSheet = [];
   let growthFromSheet = [];
+  let leadsFromSheet = [];
 
   try {
     clientsFromSheet = await fetchSheet('Clients');
@@ -745,21 +911,29 @@ async function loadData() {
   } catch (e) {
     console.error('Load Growth failed:', e);
   }
+  try {
+    leadsFromSheet = await fetchSheet('Leads');
+  } catch (e) {
+    console.error('Load Leads failed:', e);
+  }
 
   const clientsEmpty = !clientsFromSheet || clientsFromSheet.length === 0;
   const marketsEmpty = !marketsFromSheet || marketsFromSheet.length === 0;
   const growthEmpty = !growthFromSheet || growthFromSheet.length === 0;
+  const leadsEmpty = !leadsFromSheet || leadsFromSheet.length === 0;
 
   clients = clientsEmpty ? seedClients.map(x => ({...x, id: uid()})) : clientsFromSheet.map(normalizeClientRow);
   markets = marketsEmpty ? seedMarket.map(x => ({...x, id: uid()})) : marketsFromSheet.map(normalizeMarketRow);
   growth = growthEmpty ? seedGrowth.map(x => ({...x, id: uid()})) : growthFromSheet.map(normalizeGrowthRow);
+  leads = leadsEmpty ? seedLeads.map(x => ({...x, id: uid()})) : leadsFromSheet.map(normalizeLeadRow);
 
   renderClients();
   renderMarkets();
   renderGrowth();
+  renderLeads();
 
   // First-ever run: the Sheet was empty, so push the starting data up immediately.
-  if (clientsEmpty || marketsEmpty || (growthEmpty && seedGrowth.length > 0)) {
+  if (clientsEmpty || marketsEmpty || (growthEmpty && seedGrowth.length > 0) || (leadsEmpty && seedLeads.length > 0)) {
     scheduleSave();
   }
 }
@@ -825,6 +999,22 @@ function normalizeGrowthRow(g) {
   };
 }
 
+const LEAD_QUALITIES = ['Poor', 'Regular', 'Red Hot'];
+const LEAD_STATUSES = [
+  'Intro Meeting Scheduled', 'Create Presentation', 'Presentation Done',
+  'Presentation Meeting Scheduled', 'Quote Sent', 'Follow Up', 'Won', 'Lost'
+];
+
+function normalizeLeadRow(l) {
+  return {
+    ...l,
+    quality: LEAD_QUALITIES.includes(l.quality) ? l.quality : 'Regular',
+    status: LEAD_STATUSES.includes(l.status) ? l.status : 'Intro Meeting Scheduled',
+    dueDate: toPlainDate(l.dueDate),
+    notes: l.notes || '',
+  };
+}
+
 // Google Sheets returns date cells as full ISO datetimes (e.g. "2026-09-01T03:00:00.000Z").
 // <input type="date"> only accepts plain "yyyy-MM-dd", so strip it down to that.
 function toPlainDate(value) {
@@ -857,9 +1047,14 @@ function scheduleSave() {
         ...m,
         notes: arrayToNotes(m.notes),
       }));
+      const leadsForSheet = leads.map(l => ({
+        ...l,
+        dueDate: toPlainDate(l.dueDate),
+      }));
       await pushSheet('Clients', clientsForSheet);
       await pushSheet('Markets', marketsForSheet);
       await pushSheet('Growth', growth);
+      await pushSheet('Leads', leadsForSheet);
       dot.classList.remove('saving');
       label.textContent = 'Saved';
     } catch (e) {
@@ -1233,6 +1428,194 @@ function renderGrowthStats() {
   `;
 }
 
+/* ============ RENDER LEADS ============ */
+function renderLeads() {
+  const tbody = document.getElementById('leadsBody');
+  tbody.innerHTML = '';
+
+  let visibleLeads = leads.filter(l => {
+    if (leadQualityFilter && (l.quality || 'Regular') !== leadQualityFilter) return false;
+    if (leadStatusFilter && (l.status || '') !== leadStatusFilter) return false;
+    return true;
+  });
+
+  if (leadSortBy === 'dueDate') {
+    visibleLeads = [...visibleLeads].sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate.localeCompare(b.dueDate);
+    });
+  } else if (leadSortBy === 'quality') {
+    const order = { 'Red Hot': 0, 'Regular': 1, 'Poor': 2 };
+    visibleLeads = [...visibleLeads].sort((a, b) => (order[a.quality] ?? 1) - (order[b.quality] ?? 1));
+  } else if (leadSortBy === 'brand') {
+    visibleLeads = [...visibleLeads].sort((a, b) => (a.brand || '').localeCompare(b.brand || ''));
+  }
+
+  visibleLeads.forEach((l) => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-row-id', l.id);
+    const qualityClass = (l.quality || 'Regular').replace(/\s+/g, '');
+    const days = daysUntil(l.dueDate);
+    const urgencyClass = renewalUrgencyClass(days);
+    const hasNotes = l.notes && l.notes.trim().length > 0;
+
+    tr.innerHTML = `
+      <td class="col-brand">
+        <input class="editable" data-field="brand" value="${escapeHtml(l.brand)}" placeholder="Brand name">
+      </td>
+      <td>
+        <input class="editable" data-field="contact" value="${escapeHtml(l.contact)}" placeholder="Contact name">
+      </td>
+      <td>
+        <input class="editable" data-field="email" value="${escapeHtml(l.email)}" placeholder="email@brand.com">
+      </td>
+      <td>
+        <select class="editable quality-select quality-${qualityClass}" data-field="quality">
+          <option value="Poor" ${l.quality==='Poor'?'selected':''}>Poor</option>
+          <option value="Regular" ${(!l.quality || l.quality==='Regular')?'selected':''}>Regular</option>
+          <option value="Red Hot" ${l.quality==='Red Hot'?'selected':''}>Red Hot</option>
+        </select>
+      </td>
+      <td>
+        <select class="editable lead-status-select" data-field="status">
+          ${LEAD_STATUSES.map(s => `<option value="${s}" ${(l.status===s || (!l.status && s===LEAD_STATUSES[0]))?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input class="editable" data-field="nextStep" value="${escapeHtml(l.nextStep)}" placeholder="Next step...">
+      </td>
+      <td class="renewal-cell">
+        <input class="editable" type="date" data-field="dueDate" value="${l.dueDate || ''}">
+        ${days !== null ? `<span class="renewal-days ${urgencyClass}">${days >= 0 ? days + 'd left' : Math.abs(days) + 'd overdue'}</span>` : ''}
+      </td>
+      <td>
+        <button class="notes-btn ${hasNotes ? 'has-notes' : ''}" data-action="notes">${hasNotes ? 'View notes' : 'Add notes'}</button>
+      </td>
+      <td class="row-actions">
+        <button class="icon-btn" data-action="delete" title="Remove lead">✕</button>
+      </td>
+    `;
+
+    tr.querySelectorAll('[data-field]').forEach(input => {
+      input.addEventListener('change', () => {
+        l[input.dataset.field] = input.value;
+        if (input.dataset.field === 'quality') {
+          input.className = `editable quality-select quality-${input.value.replace(/\s+/g, '')}`;
+        }
+        renderLeads();
+        scheduleSave();
+      });
+    });
+
+    tr.querySelector('[data-action="notes"]').addEventListener('click', () => openNotesModal(l));
+
+    tr.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      if (confirm(`Remove ${l.brand || 'this lead'} from the dashboard?`)) {
+        leads = leads.filter(x => x.id !== l.id);
+        renderLeads();
+        scheduleSave();
+      }
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  renderLeadsStats();
+}
+
+function renderLeadsStats() {
+  const poor = leads.filter(l => (l.quality || 'Regular') === 'Poor').length;
+  const regular = leads.filter(l => (l.quality || 'Regular') === 'Regular').length;
+  const redHot = leads.filter(l => l.quality === 'Red Hot').length;
+  const total = poor + regular + redHot;
+
+  const dueSoon = leads.filter(l => {
+    const d = daysUntil(l.dueDate);
+    return d !== null && d >= 0 && d <= 7;
+  }).length;
+  const quoteSent = leads.filter(l => l.status === 'Quote Sent').length;
+
+  document.getElementById('leadsDueSoonNum').textContent = dueSoon;
+  document.getElementById('leadsQuoteSentNum').textContent = quoteSent;
+
+  document.getElementById('qualityPieWrap').innerHTML = renderPieChart([
+    { label: 'Poor', value: poor, color: 'var(--poor)' },
+    { label: 'Regular', value: regular, color: 'var(--regular)' },
+    { label: 'Red Hot', value: redHot, color: 'var(--orange)' },
+  ]);
+
+  document.getElementById('qualityLegend').innerHTML = `
+    <span class="legend-item"><span class="legend-dot" style="background:var(--poor)"></span>Poor: ${poor}</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--regular)"></span>Regular: ${regular}</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>Red Hot: ${redHot}</span>
+  `;
+}
+
+// Minimal dependency-free SVG pie chart
+function renderPieChart(segments) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  const size = 100, r = 46, cx = 50, cy = 50;
+
+  if (total === 0) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="10"/>
+    </svg>`;
+  }
+
+  let startAngle = -90;
+  const paths = segments.filter(s => s.value > 0).map(seg => {
+    const angle = (seg.value / total) * 360;
+    const endAngle = startAngle + angle;
+    const path = describeArc(cx, cy, r, startAngle, endAngle);
+    startAngle = endAngle;
+    return `<path d="${path}" fill="none" stroke="${seg.color}" stroke-width="14"/>`;
+  }).join('');
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`;
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const angleRad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) };
+}
+
+/* ============ NOTES MODAL ============ */
+let activeNotesLead = null;
+
+function openNotesModal(lead) {
+  activeNotesLead = lead;
+  document.getElementById('notesModalTitle').textContent = lead.brand ? `Notes — ${lead.brand}` : 'Notes';
+  document.getElementById('notesModalTextarea').value = lead.notes || '';
+  document.getElementById('notesModalOverlay').classList.add('open');
+}
+
+function closeNotesModal() {
+  document.getElementById('notesModalOverlay').classList.remove('open');
+  activeNotesLead = null;
+}
+
+document.getElementById('notesModalClose').addEventListener('click', closeNotesModal);
+document.getElementById('notesModalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'notesModalOverlay') closeNotesModal();
+});
+document.getElementById('notesModalSave').addEventListener('click', () => {
+  if (activeNotesLead) {
+    activeNotesLead.notes = document.getElementById('notesModalTextarea').value;
+    renderLeads();
+    scheduleSave();
+  }
+  closeNotesModal();
+});
+
 /* ============ ADD ROW ============ */
 document.getElementById('addClientBtn').addEventListener('click', () => {
   clients.unshift({ id:uid(), brand:'', contract:'', renewal:'', status:'', notes:[] });
@@ -1252,6 +1635,12 @@ document.getElementById('addGrowthBtn').addEventListener('click', () => {
   scheduleSave();
 });
 
+document.getElementById('addLeadBtn').addEventListener('click', () => {
+  leads.unshift({ id:uid(), brand:'', contact:'', email:'', quality:'Regular', status:LEAD_STATUSES[0], nextStep:'', dueDate:'', notes:'' });
+  renderLeads();
+  scheduleSave();
+});
+
 /* ============ FILTERS ============ */
 document.getElementById('clientStatusFilter').addEventListener('change', (e) => {
   clientStatusFilter = e.target.value;
@@ -1266,6 +1655,21 @@ document.getElementById('growthPriorityFilter').addEventListener('change', (e) =
 document.getElementById('growthStatusFilter').addEventListener('change', (e) => {
   growthStatusFilter = e.target.value;
   renderGrowth();
+});
+
+document.getElementById('leadQualityFilter').addEventListener('change', (e) => {
+  leadQualityFilter = e.target.value;
+  renderLeads();
+});
+
+document.getElementById('leadStatusFilter').addEventListener('change', (e) => {
+  leadStatusFilter = e.target.value;
+  renderLeads();
+});
+
+document.getElementById('leadSortBy').addEventListener('change', (e) => {
+  leadSortBy = e.target.value;
+  renderLeads();
 });
 
 /* ============ UTIL ============ */
@@ -1287,17 +1691,21 @@ const MAX_POLL_FAILURES = 3;
 const pollIntervalId = setInterval(async () => {
   const activeEl = document.activeElement;
   const isTyping = activeEl && (activeEl.classList.contains('editable') || activeEl.classList.contains('chip-input'));
-  if (isTyping) return;
+  const modalOpen = document.getElementById('notesModalOverlay').classList.contains('open');
+  if (isTyping || modalOpen) return;
   try {
     const c = await fetchSheet('Clients');
     const m = await fetchSheet('Markets');
     const g = await fetchSheet('Growth');
+    const l = await fetchSheet('Leads');
     if (c && c.length) clients = c.map(normalizeClientRow);
     if (m && m.length) markets = m.map(normalizeMarketRow);
     if (g && g.length) growth = g.map(normalizeGrowthRow);
+    if (l && l.length) leads = l.map(normalizeLeadRow);
     renderClients();
     renderMarkets();
     renderGrowth();
+    renderLeads();
     pollFailures = 0;
   } catch (e) {
     pollFailures++;
