@@ -768,7 +768,7 @@
 
 <script>
 /* ============ CONSTANTS ============ */
-const TODAY = new Date('2026-06-18T00:00:00');
+const TODAY = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
 const KNOW_MAP = { Low: 2, Medium: 3, High: 4 };
 const KNOW_LABEL = { 1:'1 — None', 2:'2 — Low', 3:'3 — Medium', 4:'4 — High', 5:'5 — Expert' };
 
